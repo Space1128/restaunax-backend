@@ -1,8 +1,18 @@
+/**
+ * Order Service Module
+ * Handles all order-related operations including creation, retrieval, and updates
+ * Uses Prisma ORM for database operations
+ */
+
 import { PrismaClient, OrderType, OrderStatus, Prisma } from '@prisma/client';
 import { AppError } from '../middleware/errorHandler';
 
+// Initialize Prisma client for database operations
 const prisma = new PrismaClient();
 
+/**
+ * Interface representing an individual item in an order
+ */
 export interface OrderItem {
   name: string;
   quantity: number;
@@ -10,6 +20,9 @@ export interface OrderItem {
   specialInstructions?: string;
 }
 
+/**
+ * Data Transfer Object for creating a new order
+ */
 export interface CreateOrderDTO {
   customerName: string;
   customerEmail: string;
@@ -19,11 +32,17 @@ export interface CreateOrderDTO {
   preparationNotes?: string;
 }
 
+/**
+ * Data Transfer Object for updating an existing order
+ */
 export interface UpdateOrderDTO {
   status?: OrderStatus;
   preparationNotes?: string;
 }
 
+/**
+ * Interface for filtering orders in search queries
+ */
 export interface OrderFilters {
   status?: OrderStatus;
   orderType?: OrderType;
@@ -31,26 +50,37 @@ export interface OrderFilters {
 }
 
 export class OrderService {
+  /**
+   * Retrieves a paginated list of orders with optional filters
+   * @param page - Current page number
+   * @param limit - Number of items per page
+   * @param filters - Optional filters for status, type, and search terms
+   * @returns Paginated order list with total count and page information
+   */
   async findAll(page: number, limit: number, filters: OrderFilters) {
     const skip = (page - 1) * limit;
     
+    // Construct the where clause based on provided filters
     const where: Prisma.OrderWhereInput = {
       ...(filters.status && { status: filters.status }),
       ...(filters.orderType && { orderType: filters.orderType }),
       ...(filters.search && {
         OR: [
+          // Search in customer name
           {
             customerName: {
               contains: filters.search,
               mode: 'insensitive' as Prisma.QueryMode
             }
           },
+          // Search in customer email
           {
             customerEmail: {
               contains: filters.search,
               mode: 'insensitive' as Prisma.QueryMode
             }
           },
+          // Search in item names
           {
             items: {
               some: {
@@ -61,6 +91,7 @@ export class OrderService {
               }
             }
           },
+          // Search in preparation notes
           {
             preparationNotes: {
               contains: filters.search,
@@ -71,6 +102,7 @@ export class OrderService {
       })
     };
 
+    // Execute parallel queries for orders and total count
     const [orders, total] = await Promise.all([
       prisma.order.findMany({
         skip,
@@ -90,6 +122,12 @@ export class OrderService {
     };
   }
 
+  /**
+   * Retrieves a specific order by its ID
+   * @param id - The unique identifier of the order
+   * @throws AppError if order is not found
+   * @returns The order with its items
+   */
   async findById(id: string) {
     const order = await prisma.order.findUnique({
       where: { id },
@@ -103,7 +141,13 @@ export class OrderService {
     return order;
   }
 
+  /**
+   * Creates a new order in the system
+   * @param data - The order data including customer info and items
+   * @returns The created order with its items
+   */
   async create(data: CreateOrderDTO) {
+    // Calculate the total price of the order
     const total = data.items.reduce(
       (sum, item) => sum + item.quantity * item.price,
       0
@@ -126,6 +170,12 @@ export class OrderService {
     });
   }
 
+  /**
+   * Updates an existing order
+   * @param id - The unique identifier of the order to update
+   * @param data - The data to update (status and/or preparation notes)
+   * @returns The updated order with its items
+   */
   async update(id: string, data: UpdateOrderDTO) {
     console.log(data);
     return prisma.order.update({
