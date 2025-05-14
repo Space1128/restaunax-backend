@@ -10,9 +10,13 @@ services:
     environment:
       DATABASE_URL: "postgresql://postgres:postgres@db:5432/restaunax?schema=public"
       PORT: 5001
-    # volumes:
+    
+    # Prod
+    # volumes:   
     #   - .:/usr/src/app
-    command: npm start
+    # command: npm run dev 
+      command: npm start
+
 
   db:
     image: postgres:15
@@ -23,6 +27,7 @@ services:
       POSTGRES_DB: restaunax
     ports:
       - "5432:5432"
+    # Prod
     # volumes:
     #   - pgdata:/var/lib/postgresql/data
 

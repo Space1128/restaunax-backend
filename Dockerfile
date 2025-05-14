@@ -22,5 +22,8 @@ RUN npm run build
 # Expose app port
 EXPOSE 5001
 
-# Run the compiled app
-CMD ["node", "dist/index.js"]
+# Run the compiled app PROD
+# CMD ["node", "dist/index.js"] 
+
+# Run the compiled app DEV
+CMD ["npm", "run", "dev"]

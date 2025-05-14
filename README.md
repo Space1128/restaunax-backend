@@ -40,7 +40,7 @@ Retrieves paginated orders with optional filters:
 - `filters`: 
   - `status`: Filter by order status
   - `orderType`: Filter by order type
-  - `search`: Search across customer name, email, items, and notes
+  - `search`: Search across customer name, email, and notes
 
 #### `findById(id)`
 Retrieves a specific order by ID with all related items.
@@ -62,7 +62,7 @@ Updates an existing order's status or preparation notes.
 ### Order
 ```typescript
 {
-  id: string
+  id: string | number
   customerName: string
   customerEmail: string
   orderType: OrderType
@@ -72,13 +72,13 @@ Updates an existing order's status or preparation notes.
   preparationNotes?: string
   items: OrderItem[]
   createdAt: Date
-  updatedAt: Date
 }
 ```
 
 ### OrderItem
 ```typescript
 {
+  id: string | number
   name: string
   quantity: number
   price: number
@@ -95,14 +95,19 @@ Updates an existing order's status or preparation notes.
 2. Set up your database connection in `.env`:
    ```
    DATABASE_URL="postgresql://user:password@localhost:5432/restaurant_db"
+   PORT=5001
    ```
 
 3. Run Prisma migrations:
    ```bash
    npx prisma migrate dev
    ```
+4. Run Prisma seed:
+   ```bash
+   npx prisma db seed
+   ```
 
-4. Start the server:
+5. Start the server:
    ```bash
    npm run dev
    ```
@@ -129,41 +134,6 @@ MIT License
 ### Docker Configuration
 The application can be run using Docker Compose, which sets up both the application and database containers.
 
-#### Docker Compose Configuration
-```yaml
-version: '3.8'
-services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://user:password@db:5432/restaurant_db
-    depends_on:
-      - db
-    volumes:
-      - .:/usr/src/app
-      - /usr/src/app/node_modules
-    command: npm run dev
-
-  db:
-    image: postgres:14-alpine
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=restaurant_db
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-volumes:
-  postgres_data:
-```
-
 ### Running with Docker Compose
 
 1. Build and start the containers:
@@ -175,6 +145,10 @@ volumes:
    ```bash
    docker-compose exec app npx prisma migrate dev
    ```
+2. Run seed in the Docker container:
+  ```bash
+  docker-compose exec app npx prisma db seed
+  ```
 
 3. Access the application:
    - API will be available at `http://localhost:5001`
