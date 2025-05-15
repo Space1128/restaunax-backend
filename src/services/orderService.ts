@@ -7,9 +7,6 @@
 import { PrismaClient, OrderType, OrderStatus, Prisma } from '@prisma/client';
 import { AppError } from '../middleware/errorHandler';
 
-// Initialize Prisma client for database operations
-const prisma = new PrismaClient();
-
 /**
  * Interface representing an individual item in an order
  */
@@ -50,6 +47,12 @@ export interface OrderFilters {
 }
 
 export class OrderService {
+  private prisma: PrismaClient;
+
+  constructor(prisma?: PrismaClient) {
+    this.prisma = prisma || new PrismaClient();
+  }
+
   /**
    * Retrieves a paginated list of orders with optional filters
    * @param page - Current page number
@@ -104,14 +107,14 @@ export class OrderService {
 
     // Execute parallel queries for orders and total count
     const [orders, total] = await Promise.all([
-      prisma.order.findMany({
+      this.prisma.order.findMany({
         skip,
         take: limit,
         where,
         include: { items: true },
         orderBy: { createdAt: 'desc' },
       }),
-      prisma.order.count({ where }),
+      this.prisma.order.count({ where }),
     ]);
 
     return {
@@ -129,7 +132,7 @@ export class OrderService {
    * @returns The order with its items
    */
   async findById(id: string) {
-    const order = await prisma.order.findUnique({
+    const order = await this.prisma.order.findUnique({
       where: { id },
       include: { items: true },
     });
@@ -153,12 +156,12 @@ export class OrderService {
       0
     );
 
-    return prisma.order.create({
+    return this.prisma.order.create({
       data: {
         customerName: data.customerName,
         customerEmail: data.customerEmail,
         orderType: data.orderType,
-        status: OrderStatus.pending,
+        status: "pending",
         total,
         scheduledFor: data.scheduledFor ? new Date(data.scheduledFor) : null,
         preparationNotes: data.preparationNotes,
@@ -178,7 +181,7 @@ export class OrderService {
    */
   async update(id: string, data: UpdateOrderDTO) {
     console.log(data);
-    return prisma.order.update({
+    return this.prisma.order.update({
       where: { id },
       data,
       include: { items: true },

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { OrderStatus, OrderType } from '@prisma/client';
 import { OrderService } from '../services/orderService';
 
+// Create a single instance of OrderService with default Prisma client
 const orderService = new OrderService();
 
 export class OrderController {
