@@ -184,17 +184,17 @@ The application can be run using Docker Compose, which sets up both the applicat
 
 1. Build and start the containers:
    ```bash
-   docker-compose up --build
+   docker-compose -p restaunax-server up --build
    ```
 
 2. Run migrations in the Docker container:
    ```bash
-   docker-compose exec app npx prisma migrate dev
+   docker-compose -p restaunax-server exec app npx prisma migrate dev
    ```
 
 3. Run seed in the Docker container:
    ```bash
-   docker-compose exec app npx prisma db seed
+   docker-compose -p restaunax-server exec app npx prisma db seed
    ```
 
 4. Access the application:
@@ -230,34 +230,39 @@ We use a separate Docker Compose configuration for testing to isolate the test e
 1. Start the test environment:
    ```bash
    # Start test containers
-   docker-compose -f docker-compose.test.yml up -d
+   docker-compose -f docker-compose.test.yml -p restaunax-test up -d
    ```
 
-2. Run the tests:
+2. Install Database in the Docker container:
+   ```bash
+   docker-compose -f docker-compose.test.yml -p restaunax-test exec app npx prisma migrate dev
+   ```
+
+3. Run the tests:
    ```bash
    # Run all tests
-   docker-compose -f docker-compose.test.yml exec app npm run test:all
+   docker-compose -f docker-compose.test.yml -p restaunax-test exec app npm run test:all
 
    # Run only unit tests
-   docker-compose -f docker-compose.test.yml exec app npm run test:unit
+   docker-compose -f docker-compose.test.yml -p restaunax-test exec app npm run test:unit
 
    # Run only integration tests
-   docker-compose -f docker-compose.test.yml exec app npm run test:integration
+   docker-compose -f docker-compose.test.yml -p restaunax-test exec app npm run test:integration
    ```
 
-3. View test logs:
+4. View test logs:
    ```bash
    # View test database logs
-   docker-compose -f docker-compose.test.yml logs test-db
+   docker-compose -f docker-compose.test.yml -p restaunax-test  logs test-db
 
    # View application test logs
-   docker-compose -f docker-compose.test.yml logs app
+   docker-compose -f docker-compose.test.yml -p restaunax-test logs app
    ```
 
-4. Clean up test environment:
+5. Clean up test environment:
    ```bash
    # Stop and remove test containers
-   docker-compose -f docker-compose.test.yml down
+   docker-compose -f docker-compose.test.yml -p restaunax-test down
    ```
 
 ### Test Database Configuration
@@ -270,7 +275,7 @@ The test environment uses a separate PostgreSQL instance:
 
 To manually connect to the test database:
 ```bash
-docker-compose -f docker-compose.test.yml exec test-db psql -U postgres -d restaunax_test
+docker-compose -f docker-compose.test.yml -p restaunax-test exec test-db psql -U postgres -d restaunax_test
 ```
 
 ### Troubleshooting Docker Setup
