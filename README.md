@@ -180,86 +180,112 @@ MIT License
 ### Docker Configuration
 The application can be run using Docker Compose, which sets up both the application and database containers.
 
-### Running Tests in Docker
+### Running with Docker Compose
 
 1. Build and start the containers:
    ```bash
    docker-compose up --build
    ```
 
-2. Run tests in Docker:
-```bash
-# Start test database
-docker-compose -f docker-compose.test.yml up -d test-db
-
-# Wait for database to be ready
-docker-compose -f docker-compose.test.yml exec test-db pg_isready -U postgres
-
-# Run migrations on test database
-docker-compose -f docker-compose.test.yml exec -e DATABASE_URL="postgresql://postgres:postgres@test-db:5432/restaunax_test" app npx prisma migrate deploy
-
-# Run tests
-docker-compose -f docker-compose.test.yml exec -e NODE_ENV=test -e DATABASE_URL="postgresql://postgres:postgres@test-db:5432/restaunax_test" app npm run test:all
-
-# Stop test containers
-docker-compose -f docker-compose.test.yml down
-```
-
-3. Run specific test suites:
-```bash
-# Run only unit tests
-docker-compose -f docker-compose.test.yml exec app npm run test:unit
-
-# Run only integration tests
-docker-compose -f docker-compose.test.yml exec -e NODE_ENV=test -e DATABASE_URL="postgresql://postgres:postgres@test-db:5432/restaunax_test" app npm run test:integration
-```
-
-4. Watch test output in real-time:
-```bash
-# Run tests with watch mode
-docker-compose -f docker-compose.test.yml exec app npm run test:watch
-```
-
-### Test Environment Variables in Docker
-Create a `.env.test.docker` file:
-```env
-DATABASE_URL="postgresql://postgres:postgres@test-db:5432/restaunax_test"
-NODE_ENV="test"
-```
-
-### Automated Test Workflow
-Add these commands to your CI pipeline:
-```bash
-# Start fresh test environment
-docker-compose -f docker-compose.test.yml down -v
-docker-compose -f docker-compose.test.yml up -d test-db
-
-# Wait for database and run tests
-./scripts/wait-for-it.sh test-db:5432 -- npm run test:all
-```
-
-### Troubleshooting Tests in Docker
-
-1. Database Connection Issues:
+2. Run migrations in the Docker container:
    ```bash
-   # Check test database logs
+   docker-compose exec app npx prisma migrate dev
+   ```
+
+3. Run seed in the Docker container:
+   ```bash
+   docker-compose exec app npx prisma db seed
+   ```
+
+4. Access the application:
+   - API will be available at `http://localhost:5001`
+   - Database will be accessible at `localhost:5432`
+
+### Development Workflow with Docker
+
+1. Start the services:
+   ```bash
+   docker-compose up
+   ```
+
+2. View logs:
+   ```bash
+   docker-compose logs -f
+   ```
+
+3. Stop the services:
+   ```bash
+   docker-compose down
+   ```
+
+4. Rebuild after dependencies change:
+   ```bash
+   docker-compose up --build
+   ```
+
+### Running Tests in Docker
+
+We use a separate Docker Compose configuration for testing to isolate the test environment from development.
+
+1. Start the test environment:
+   ```bash
+   # Start test containers
+   docker-compose -f docker-compose.test.yml up -d
+   ```
+
+2. Run the tests:
+   ```bash
+   # Run all tests
+   docker-compose -f docker-compose.test.yml exec app npm run test:all
+
+   # Run only unit tests
+   docker-compose -f docker-compose.test.yml exec app npm run test:unit
+
+   # Run only integration tests
+   docker-compose -f docker-compose.test.yml exec app npm run test:integration
+   ```
+
+3. View test logs:
+   ```bash
+   # View test database logs
    docker-compose -f docker-compose.test.yml logs test-db
-   
-   # Verify database connection
-   docker-compose -f docker-compose.test.yml exec test-db psql -U postgres -d restaunax_test -c "\dt"
-   ```
 
-2. Test Execution Issues:
-   ```bash
-   # Check test container logs
+   # View application test logs
    docker-compose -f docker-compose.test.yml logs app
-   
-   # Access test container shell
-   docker-compose -f docker-compose.test.yml exec app sh
    ```
 
-3. Common Solutions:
-   - Ensure test database is ready before running tests
-   - Verify environment variables are correctly passed
-   - Check database migrations are applied
-   - Ensure proper test cleanup between runs
+4. Clean up test environment:
+   ```bash
+   # Stop and remove test containers
+   docker-compose -f docker-compose.test.yml down
+   ```
+
+### Test Database Configuration
+
+The test environment uses a separate PostgreSQL instance:
+- Port: 5433 (to avoid conflicts with dev database)
+- Database: restaunax_test
+- Username: postgres
+- Password: postgres
+
+To manually connect to the test database:
+```bash
+docker-compose -f docker-compose.test.yml exec test-db psql -U postgres -d restaunax_test
+```
+
+### Troubleshooting Docker Setup
+
+1. If the database connection fails:
+   - Ensure the database container is running: `docker-compose ps`
+   - Check database logs: `docker-compose logs db`
+   - Verify environment variables in docker-compose.yml
+
+2. If the application fails to start:
+   - Check application logs: `docker-compose logs app`
+   - Ensure all required environment variables are set
+   - Verify the database migration status
+
+3. If tests fail in Docker:
+   - Verify test database is ready: `docker-compose -f docker-compose.test.yml exec test-db pg_isready`
+   - Check test database connection: `docker-compose -f docker-compose.test.yml exec app npx prisma db push --preview-feature`
+   - Ensure proper test cleanup: `docker-compose -f docker-compose.test.yml down -v && docker-compose -f docker-compose.test.yml up -d`
